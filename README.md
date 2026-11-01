@@ -1,4 +1,8 @@
-# Cells
+<p align="center">
+  <img src="docs/icon.png" width="128" height="128" alt="Cells app icon">
+</p>
+
+<h1 align="center">Cells</h1>
 
 Cells is a spreadsheet editor for macOS. It opens CSV files, Excel workbooks and Google Sheets, calculates formulas, and edits values, formatting, rows, columns and sheets.
 
