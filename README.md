@@ -4,7 +4,7 @@ Cells is a spreadsheet editor for macOS. It opens CSV files, Excel workbooks and
 
 ![Cells with a budget sheet open: formatted header, currency values, a selected column with its formula in the formula bar and the sum in the status bar](docs/screenshot.png)
 
-It is built with [Tauri 2](https://tauri.app): a Rust backend with the [IronCalc](https://www.ironcalc.com) spreadsheet engine, and a React frontend for the interface.
+It is built with [Tauri 2](https://tauri.app): a Rust backend with the [IronCalc](https://www.ironcalc.com) spreadsheet engine, and a React frontend for the interface. The app is about 14 MB, 7 MB as a download.
 
 ## Features
 
