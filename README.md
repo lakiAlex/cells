@@ -3,7 +3,7 @@
   <img src="docs/title-light.png" width="128" height="44" alt="Cells">
 </picture>
 
-Cells opens CSV files, Excel workbooks and Google Sheets in a light, quick spreadsheet editor for macOS. Edit with more than 300 Excel functions, cell formatting, sorting, filtering and multiple sheets. Free and open source.
+Cells is a quick, lightweight, open-source spreadsheet editor for macOS. Open and edit CSV files, Excel workbooks and Google Sheets, with more than 300 Excel functions, cell formatting, sorting, filtering and multiple sheets.
 
 ![Cells opening a bachelor party budget from the recent list, selecting cells and a column with its sum in the status bar, then light mode](docs/demo.gif)
 
@@ -11,7 +11,7 @@ It is built with [Tauri 2](https://tauri.app): a Rust backend with the [IronCalc
 
 ## Why Cells
 
-- **Light and quick.** A real macOS app built in Rust, about 14 MB, that opens spreadsheets instantly. No Electron and no bundled browser.
+- **Fast and native.** A real macOS app built in Rust, about 14 MB, that opens spreadsheets instantly. No Electron and no bundled browser.
 - **Free and open source.** No account, no subscription and no telemetry. MIT licensed.
 - **Opens what you already have.** CSV and TSV, Excel (`.xlsx`, `.xlsm`, `.xls`, `.xlsb`), OpenDocument (`.ods`) and Google Sheets links.
 - **Real formulas.** More than 300 Excel functions, calculated as you type, using the IronCalc engine.
