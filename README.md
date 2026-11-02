@@ -3,11 +3,19 @@
   <img src="docs/title-light.png" width="128" height="44" alt="Cells">
 </picture>
 
-Cells is a spreadsheet editor for macOS. It opens CSV files, Excel workbooks and Google Sheets, calculates formulas, and edits values, formatting, rows, columns and sheets.
+Cells is an extremely snappy, lightweight, open-source spreadsheet editor for macOS. Open and edit CSV files, Excel workbooks and Google Sheets, with more than 300 Excel functions, cell formatting, sorting, filtering, and multiple sheets.
 
 ![Cells opening a bachelor party budget from the recent list, selecting cells and a column with its sum in the status bar, then light mode](docs/demo.gif)
 
 It is built with [Tauri 2](https://tauri.app): a Rust backend with the [IronCalc](https://www.ironcalc.com) spreadsheet engine, and a React frontend for the interface. The app is about 14 MB, 7 MB as a download.
+
+## Why Cells
+
+- **Fast and native.** A real macOS app built in Rust, about 14 MB, that opens spreadsheets instantly. No Electron and no bundled browser.
+- **Free and open source.** No account, no subscription and no telemetry. MIT licensed.
+- **Opens what you already have.** CSV and TSV, Excel (`.xlsx`, `.xlsm`, `.xls`, `.xlsb`), OpenDocument (`.ods`) and Google Sheets links.
+- **Real formulas.** More than 300 Excel functions, calculated as you type, using the IronCalc engine.
+- **Keeps your files intact.** Filters, pictures, charts, comments and tables are kept when you save an Excel file.
 
 ## Features
 
@@ -143,6 +151,20 @@ IronCalc does not support everything Excel does. Some table references (`[Column
 | [Lucide](https://lucide.dev) | Icons | ISC |
 
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) has more detail.
+
+## FAQ
+
+**Is Cells free?** Yes. It is free and open source under the MIT license, with no account, subscription or telemetry.
+
+**Can it open Excel files?** Yes, `.xlsx`, `.xlsm`, `.xls` and `.xlsb`, with formulas, formatting and more than 300 Excel functions.
+
+**Can it open CSV and Google Sheets?** Yes. It opens CSV and TSV files, and Google Sheets from a share link or a `.gsheet` file.
+
+**Does it work offline?** Yes, apart from downloading a Google Sheet, which needs a connection.
+
+**Does it work on Apple Silicon and Intel Macs?** The prebuilt download is for Apple Silicon (M1 and later), macOS 11 or later. On an Intel Mac you can build it from source.
+
+**Is it an Excel or Google Sheets alternative?** It is a lightweight, native spreadsheet editor for macOS that opens those files directly, for quick viewing and editing without a heavy office suite or a browser tab.
 
 ## License
 
