@@ -96,8 +96,11 @@ It is built with [Tauri 2](https://tauri.app): a Rust backend with the [IronCalc
 With Homebrew:
 
 ```sh
+brew trust --cask lakialex/tap/cells
 brew install --cask lakialex/tap/cells
 ```
+
+Homebrew only loads casks from other taps once they are trusted, which the first line does.
 
 Or download `Cells_<version>_aarch64.dmg` from [Releases](../../releases), open it, and drag `Cells` into the Applications folder. The build is for Apple Silicon Macs and needs macOS 11 or later. A `.app.zip` is attached too.
 
