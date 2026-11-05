@@ -71,6 +71,7 @@ import { FindBar } from "./components/FindBar";
 import { Grid, selectionRect, type Cell, type Selection } from "./components/Grid";
 import { SheetTabs } from "./components/SheetTabs";
 import { MemeButton } from "./components/Meme";
+import { UpdateButton } from "./components/Update";
 import { WindowSnap } from "./components/WindowSnap";
 import { RecentIcon, RecentPanel, SidebarIcon, folderOf, type SidebarIconName } from "./components/Sidebar";
 import { Toolbar, ViewControls } from "./components/Toolbar";
@@ -1165,6 +1166,7 @@ export default function App() {
               </button>
             </>
           )}
+          <UpdateButton app="Cells" repo="lakiAlex/cells" restartNote="Save your changes first." notify />
           <WindowSnap />
           <button
             type="button"
