@@ -15,6 +15,10 @@ use tauri::{Emitter, Manager};
 use commands::AppState;
 use recent::Recent;
 
+/// Files macOS hands over before setup has run. A double-clicked file that
+/// launches Cells arrives this way, before the app state exists.
+static EARLY_OPENS: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app = tauri::Builder::default()
@@ -25,10 +29,11 @@ pub fn run() {
             let dir = app.path().app_config_dir()?;
             std::fs::create_dir_all(&dir)?;
             // Files given on the command line open like files from Finder.
-            let args: Vec<String> = std::env::args()
+            let mut args: Vec<String> = std::env::args()
                 .skip(1)
                 .filter(|a| !a.starts_with('-') && std::path::Path::new(a).is_file())
                 .collect();
+            args.extend(std::mem::take(&mut *EARLY_OPENS.lock().unwrap_or_else(|e| e.into_inner())));
             app.manage(AppState {
                 docs: Default::default(),
                 recent: Recent::load(dir.join("recent.json")),
@@ -72,8 +77,9 @@ pub fn run() {
                 .filter_map(|url| url.to_file_path().ok())
                 .map(|p| p.to_string_lossy().into_owned())
                 .collect();
-            if let Some(state) = handle.try_state::<AppState>() {
-                state.pending_opens.lock().unwrap().extend(paths.clone());
+            match handle.try_state::<AppState>() {
+                Some(state) => state.pending_opens.lock().unwrap_or_else(|e| e.into_inner()).extend(paths.clone()),
+                None => EARLY_OPENS.lock().unwrap_or_else(|e| e.into_inner()).extend(paths.clone()),
             }
             let _ = handle.emit("open-paths", paths);
         }

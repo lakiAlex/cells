@@ -14,6 +14,10 @@ crate, used for files that have none.
   `src-tauri/vendor/ironcalc_base/LICENSE-MIT` and `LICENSE-Apache-2.0`.
 - Copyright: the IronCalc authors.
 
+## Hugeicons
+
+The interface icons come from the free Hugeicons set, stroke-rounded style, through `@hugeicons/react` and `@hugeicons/core-free-icons` (MIT License). https://hugeicons.com
+
 ## Lucide
 
 Icons in the interface and the glyph in the app icon.

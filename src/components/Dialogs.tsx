@@ -1,4 +1,4 @@
-import { ArrowUpDown, LoaderCircle, Plus, Sheet, TriangleAlert, X } from "lucide-react";
+import { ArrowUpDown, LoaderCircle, Plus, Sheet, TriangleAlert, X } from "./icons";
 import { useState, type ReactNode } from "react";
 import type { SortKey } from "../api";
 import { Dialog } from "./Dialog";

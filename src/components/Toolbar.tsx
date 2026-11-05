@@ -21,8 +21,8 @@ import {
   Underline,
   Undo2,
   WrapText,
-} from "lucide-react";
-import { ArrowUpDown, ListFilter, Search, X } from "lucide-react";
+} from "./icons";
+import { ArrowUpDown, ListFilter, Search, X } from "./icons";
 import { useState, type ReactNode } from "react";
 import { NUMBER_FORMATS, type StyleDto } from "../api";
 import { BorderPicker, ColorPalette, Popover } from "./Popover";

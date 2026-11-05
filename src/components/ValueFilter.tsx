@@ -1,4 +1,4 @@
-import { LoaderCircle, Search } from "lucide-react";
+import { LoaderCircle, Search } from "./icons";
 import { useMemo, useState } from "react";
 import { Popover } from "./Popover";
 

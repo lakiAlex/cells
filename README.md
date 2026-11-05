@@ -23,7 +23,7 @@ It is built with [Tauri 2](https://tauri.app): a Rust backend with the [IronCalc
 
 - CSV, TSV and text files, Excel `.xlsx` and `.xlsm`, Excel 97-2003 `.xls`, Excel binary `.xlsb` and OpenDocument `.ods`.
 - Google Sheets: paste a share link ("Anyone with the link can view"), or open a `.gsheet` file from Google Drive for desktop. All tabs are downloaded.
-- Open from Finder (Open With, double-click), by dropping a file on the window, or from the recent list in the sidebar.
+- Open from Finder (Open With, double-click), by dropping a file on the window, or from the Recent panel. A file opened from Finder while Cells is closed opens as soon as Cells starts.
 - `.xls`, `.xlsb` and `.ods` open with their values; Save As writes them as `.xlsx` or CSV.
 
 **Formulas**
@@ -62,9 +62,16 @@ It is built with [Tauri 2](https://tauri.app): a Rust backend with the [IronCalc
 - A notice says when a file has parts Cells does not keep (pivot tables, slicers, links to other workbooks, macros), and when formulas give a different result in Cells than the one stored in the file.
 - The first save of a session moves the original file to the Trash instead of overwriting it.
 
-**Look**
+**Interface**
 
-- Light and dark mode, and accent colors: Neutral (white in dark mode, black in light mode) and the macOS system colors.
+- The same design as [Lookout](https://github.com/lakiAlex/lookout): a title bar across the window, an icon sidebar, a side panel and the sheet on a rounded surface. Icons are [Hugeicons](https://hugeicons.com).
+- The title bar shows the open file with its format and folder, and a dot when it has unsaved changes. Save As, Save, the window layout button and the light and dark switch are on the right.
+- The sidebar has Recent files, Find and replace, New spreadsheet, Open file and Open Google Sheet. It minimizes to a narrow strip with small icons.
+- The Recent panel lists recent files with an icon per format (Excel, CSV, OpenDocument, Google Sheets) and a filter box. It opens and closes with ⇧⌘E and can be resized by dragging its edge. Right-click a file to show it in Finder or remove it from the list.
+- Without an open file, a start screen has Open, New, Open Google Sheet and the most recent files.
+- The window layout button opens a panel with four layouts, as in the Rectangle app: left half, right half, center and fill the screen. Clicking left or right again steps the width through 1/2, 2/3 and 1/3, clicking center again makes the window larger, and clicking fill again puts the window back where it was.
+- The ... button at the bottom of the sidebar has light and dark mode, the accent color (Neutral, white in dark mode and black in light mode, or one of the macOS system colors) and memes.
+- The cat button in the corner shows a random meme from Reddit through [meme-api.com](https://github.com/D3vd/Meme_Api), skipping posts marked NSFW. Settings > Memes turns it off.
 
 ## Keyboard shortcuts
 
@@ -77,6 +84,7 @@ It is built with [Tauri 2](https://tauri.app): a Rust backend with the [IronCalc
 | ⌘B, ⌘I, ⌘U, ⇧⌘X | Bold, italic, underline, strikethrough |
 | ⌘D, ⌘R | Fill down, fill right |
 | ⌘F | Find and replace |
+| ⇧⌘E | Show or hide the Recent panel |
 | ⌘A | Select all |
 | Return or F2 | Edit the cell |
 | ⌥Return | Line break inside a cell |
@@ -85,13 +93,21 @@ It is built with [Tauri 2](https://tauri.app): a Rust backend with the [IronCalc
 
 ## Install
 
-Download `Cells_<version>_aarch64.dmg` from [Releases](../../releases), open it, and drag `Cells` into the Applications folder. The build is for Apple Silicon Macs and needs macOS 11 or later. A `.app.zip` is attached too.
+With Homebrew:
 
-The app is not signed with an Apple Developer certificate or notarized, so the first time you open it macOS says it cannot be verified. Either right-click the app and choose Open, then confirm once, or run:
+```sh
+brew install --cask lakialex/tap/cells
+```
+
+Or download `Cells_<version>_aarch64.dmg` from [Releases](../../releases), open it, and drag `Cells` into the Applications folder. The build is for Apple Silicon Macs and needs macOS 11 or later. A `.app.zip` is attached too.
+
+The app is not signed with an Apple Developer certificate or notarized, so the first time you open a download macOS says it cannot be verified. Either right-click the app and choose Open, then confirm once, or run:
 
 ```sh
 xattr -dr com.apple.quarantine /Applications/Cells.app
 ```
+
+The Homebrew cask does this for you.
 
 ## Build from source
 
@@ -130,13 +146,15 @@ IronCalc does not support everything Excel does. Some table references (`[Column
 | `src-tauri/src/corpus.rs` | Checks for the file collection |
 | `src-tauri/vendor/` | Patched IronCalc engine |
 | `src/components/Grid.tsx` | The grid: drawing, selection, editing, fill handle, frozen panes |
-| `src/components/` | Toolbar, dialogs, sheet tabs, find bar, filters |
+| `src/components/Sidebar.tsx` | Sidebar icons and the Recent panel |
+| `src/components/WindowSnap.tsx` | The window layout button, shared with Lookout and Dispatch |
+| `src/components/` | Toolbar, dialogs, sheet tabs, find bar, filters, menus |
 | `src-tauri/icons/` | App icon. `build-icon.sh` rebuilds the macOS 26 icon. |
 
 ## Data
 
 - Recent files: `~/Library/Application Support/com.laki.cells/recent.json`
-- Light or dark mode and the accent color are stored by the app's web view.
+- Light or dark mode, the accent color, the sidebar and panel state and the memes setting are stored by the app's web view.
 
 ## Third-party software
 
@@ -148,7 +166,8 @@ IronCalc does not support everything Excel does. Some table references (`[Column
 | [encoding_rs](https://github.com/hsivonen/encoding_rs) | Text encodings | MIT or Apache-2.0, and BSD-3-Clause |
 | [Tauri](https://tauri.app) | App framework | MIT or Apache-2.0 |
 | [React](https://react.dev) | Interface | MIT |
-| [Lucide](https://lucide.dev) | Icons | ISC |
+| [Hugeicons](https://hugeicons.com) | Icons | MIT |
+| [Lucide](https://lucide.dev) | The title bar glyph | ISC |
 
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) has more detail.
 

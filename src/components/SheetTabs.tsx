@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus } from "./icons";
 import { useEffect, useState, type MouseEvent as ReactMouseEvent } from "react";
 import type { SheetInfo } from "../api";
 

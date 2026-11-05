@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, ChevronDown, Filter } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, Filter } from "./icons";
 import {
   useEffect,
   useLayoutEffect,

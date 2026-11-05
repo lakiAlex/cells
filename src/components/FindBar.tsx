@@ -1,4 +1,4 @@
-import { CaseSensitive, ChevronDown, ChevronRight, ChevronUp, Search, WholeWord, X } from "lucide-react";
+import { CaseSensitive, ChevronDown, ChevronRight, ChevronUp, Search, WholeWord, X } from "./icons";
 import { useEffect, useRef, useState } from "react";
 import type { FindOptions } from "../api";
 

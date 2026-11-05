@@ -1,20 +1,42 @@
 @import "./styles-base.css";
 
-/* Cell borders with the automatic color, and the accent colors (macOS system colors). */
+/* Tokens shared with Lookout. Neutral accent (white in dark mode, black in
+   light mode) by default, the macOS system colors to pick from. */
 :root {
   --cell-border: #bdbdbd;
-  --accent: #0a84ff;
-  --on-accent: #ffffff;
+  --accent: #ffffff;
+  --on-accent: #0a0a0a;
   --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
+  --focus: var(--accent);
+  --ring: color-mix(in srgb, var(--accent) 30%, transparent);
+  /* The title bar, the sidebar and the side panel share this color, so they read as one surface. */
+  --chrome: #080808;
+  --group-bg: rgba(255, 255, 255, 0.05);
+  --group-ring: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --raised: rgba(255, 255, 255, 0.11);
+  --raised-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --tab-active: rgba(255, 255, 255, 0.075);
+  --content-ring: 0 0 0 1px rgba(255, 255, 255, 0.055);
+  --head-bg: #141414;
 }
 
 :root[data-theme="light"] {
   --cell-border: #1f1f1f;
-  --accent: #007aff;
+  --accent: #000000;
+  --on-accent: #ffffff;
+  --chrome: #f7f7f9;
+  --group-bg: rgba(0, 0, 0, 0.05);
+  --group-ring: inset 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+  --raised: #ffffff;
+  --raised-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.2), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  --tab-active: #ffffff;
+  --content-ring: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.05);
+  --head-bg: #f7f7f9;
 }
 
-:root[data-accent="neutral"] { --accent: #ffffff; --on-accent: #0a0a0a; }
-:root[data-theme="light"][data-accent="neutral"] { --accent: #000000; --on-accent: #ffffff; }
+:root[data-accent="blue"] { --accent: #0a84ff; --on-accent: #ffffff; }
+:root[data-theme="light"][data-accent="blue"] { --accent: #007aff; }
+:root:is([data-accent="purple"], [data-accent="pink"], [data-accent="red"], [data-accent="orange"], [data-accent="green"], [data-accent="graphite"]) { --on-accent: #ffffff; }
 :root[data-accent="purple"] { --accent: #bf5af2; }
 :root[data-accent="pink"] { --accent: #ff375f; }
 :root[data-accent="red"] { --accent: #ff453a; }
@@ -40,152 +62,543 @@ body.row-resizing * {
   cursor: row-resize !important;
 }
 
-/* ---- Layout ---- */
+/* ---- Layout ----
+   The same frame as Lookout: a 38px title bar across the window, an icon
+   sidebar that can be minimized, a side panel that slides open and can be
+   resized, and the sheet on a rounded surface inset in the chrome. */
+
+/* Registered so the sidebar width can animate between normal and minimized. */
+@property --bar-w {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 54px;
+}
+
+/* Registered so the side panel's width can animate when it opens and closes. */
+@property --side-w {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
 
 .app {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  --bar-w: 54px;
+  transition:
+    --bar-w 0.24s cubic-bezier(0.2, 0, 0, 1),
+    --side-w 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+  grid-template-columns: var(--bar-w) var(--side-w) minmax(0, 1fr);
+  grid-template-rows: 38px minmax(0, 1fr);
   height: 100vh;
+  background: var(--chrome);
 }
 
-.main {
+/* Dragging the edge follows the pointer without easing. */
+body.col-resizing .app {
+  transition: --bar-w 0.24s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.content {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  margin: 0 8px 8px 0;
+  border-radius: 12px;
   background: var(--bg);
+  box-shadow: var(--content-ring);
+  overflow: hidden;
 }
 
+/* ---- Title bar ---- */
+
 .titlebar {
-  height: 52px;
-  flex-shrink: 0;
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  background: var(--chrome);
+}
+
+.titlebar-left {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 14px 0 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-subtle);
+  min-width: calc(var(--bar-w) + var(--side-w));
+  max-width: 46vw;
+  height: 100%;
+  padding: 0 12px 0 86px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--fg-strong);
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .doc-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 0;
+  gap: 8px;
   flex: 1;
+  min-width: 0;
   height: 100%;
   white-space: nowrap;
   overflow: hidden;
 }
 
-.doc-title strong {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+/* The open file, in the same raised pill as an active tab in Lookout. */
+.doc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 27px;
+  min-width: 0;
+  padding: 0 10px 0 9px;
+  border-radius: 8px;
+  background: var(--tab-active);
+  box-shadow: var(--raised-shadow);
+  color: var(--fg-strong);
+  font-size: 12.5px;
+  animation: pill-in 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+
+@keyframes pill-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.97);
+  }
+}
+
+.doc-pill strong {
+  min-width: 0;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.kind-tag {
-  font-family: var(--mono);
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--fg-2);
-  white-space: nowrap;
+.edited-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber);
+  flex-shrink: 0;
+  animation: badge-pop 0.35s cubic-bezier(0.34, 1.7, 0.5, 1);
 }
 
-.edited {
+@keyframes badge-pop {
+  from {
+    transform: scale(0);
+  }
+}
+
+.kind-tag {
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: var(--group-bg);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-2);
+  flex-shrink: 0;
+}
+
+.doc-where {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 12px;
-  color: var(--amber);
+  color: var(--fg-3);
 }
 
 .titlebar-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-/* ---- Sidebar ---- */
-
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  background: var(--bg-subtle);
-  border-right: 1px solid var(--border);
-}
-
-.sidebar-titlebar {
-  height: 52px;
+  padding-right: 12px;
   flex-shrink: 0;
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 0 18px 14px;
-  color: var(--fg-strong);
-  white-space: nowrap;
-}
+/* ---- Activity bar ---- */
 
-.brand-name {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.brand-sub {
-  margin-left: -4px;
-  font-size: 13px;
-  color: var(--fg-3);
-}
-
-.sidebar-actions {
+/* The sidebar: rounded groups of icon buttons, with a raised pill behind the open panel's icon. */
+.activity-bar {
+  position: relative;
+  z-index: 30;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 12px 14px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0 10px 6px;
+  background: var(--chrome);
 }
 
-.sidebar-actions .button {
-  justify-content: flex-start;
+.activity-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--group-bg);
+  box-shadow: var(--group-ring);
 }
 
-.recent {
+/* Darker than the toolbar's groups in dark mode, so the sidebar stays quiet. */
+:root:not([data-theme="light"]) .activity-group {
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.045);
+}
+
+.activity-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--fg-3);
+}
+
+.activity-button:hover:not(:disabled) {
+  color: var(--fg-strong);
+  background: var(--hover);
+}
+
+.activity-button:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.activity-button:disabled {
+  opacity: 0.35;
+}
+
+.activity-button.active {
+  color: var(--fg-strong);
+  background: var(--raised);
+  box-shadow: var(--raised-shadow);
+}
+
+:root:not([data-theme="light"]) .activity-button.active {
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.activity-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.activity-spacer {
   flex: 1;
-  overflow-y: auto;
-  padding: 0 8px 12px;
 }
 
-.recent-title {
-  padding: 6px 8px;
+/* Sidebar tooltips: a pill that slides in next to the icon, quicker than the system tooltip. */
+.activity-button[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fg) 9%, var(--chrome));
+  box-shadow: var(--shadow-menu);
+  color: var(--fg-strong);
   font-size: 12px;
   font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-6px, -50%) scale(0.94);
+  transform-origin: left center;
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease;
+}
+
+.activity-button[data-tip]:hover::after {
+  opacity: 1;
+  transform: translate(0, -50%) scale(1);
+  transition:
+    opacity 0.14s ease 0.1s,
+    transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.25) 0.1s;
+}
+
+body:has(.context-menu) .activity-button[data-tip]::after {
+  opacity: 0 !important;
+}
+
+/* Minimized: a narrow bar with small icons. Sizes animate between the two. */
+.app.compact {
+  --bar-w: 36px;
+}
+
+.activity-bar,
+.activity-group,
+.activity-button,
+.activity-button svg {
+  transition-duration: 0.24s;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.activity-bar {
+  transition-property: gap, padding;
+}
+
+.activity-group {
+  transition-property: padding, border-radius;
+}
+
+.activity-button {
+  transition-property: width, height, border-radius, background-color, color, transform;
+}
+
+.activity-button svg {
+  transition-property: width, height;
+}
+
+.app.compact .activity-bar {
+  gap: 6px;
+  padding: 6px 0 6px 4px;
+}
+
+.app.compact .activity-group {
+  padding: 2px;
+  border-radius: 9px;
+}
+
+.app.compact .activity-button {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+}
+
+.app.compact .activity-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ---- Light/dark switch ---- */
+
+/* Smaller than the base style, with larger icons, as in Lookout. */
+.theme-switch {
+  padding: 3px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.theme-thumb {
+  top: 3px;
+  left: 3px;
+  width: 25px;
+  height: 20px;
+  border-radius: 5px;
+  transform-origin: left center;
+}
+
+.theme-switch.dark .theme-thumb {
+  transform: translateX(25px);
+}
+
+.theme-option {
+  width: 25px;
+  height: 20px;
+}
+
+/* On a click the knob stretches toward the other side, then settles with a small bounce. */
+.theme-switch.switched.dark .theme-thumb {
+  animation: thumb-to-dark 0.42s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+.theme-switch.switched.light .theme-thumb {
+  animation: thumb-to-light 0.42s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+@keyframes thumb-to-dark {
+  0% { transform: translateX(0) scaleX(1); }
+  40% { transform: translateX(4px) scaleX(1.6); }
+  75% { transform: translateX(27px) scaleX(0.94); }
+  100% { transform: translateX(25px) scaleX(1); }
+}
+
+@keyframes thumb-to-light {
+  0% { transform: translateX(25px) scaleX(1); }
+  40% { transform: translateX(6px) scaleX(1.6); }
+  75% { transform: translateX(-2px) scaleX(0.94); }
+  100% { transform: translateX(0) scaleX(1); }
+}
+
+/* The base style shrinks the inactive icon to 80%, too small at this size. */
+.theme-switch.dark .sun svg {
+  transform: rotate(-90deg) scale(0.92);
+}
+
+.theme-switch.light .moon svg {
+  transform: rotate(45deg) scale(0.92);
+}
+
+/* ---- Side panel ---- */
+
+.side-panel {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--chrome);
+}
+
+.side-resize {
+  position: absolute;
+  top: 0;
+  right: -1px;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 2;
+}
+
+/* A side panel opening comes in from the left. */
+.side-panel-body {
+  height: 100%;
+  transform-origin: 0 0;
+  animation: side-panel-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+
+@keyframes side-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.98);
+  }
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 200px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 8px 0 16px;
+  flex-shrink: 0;
+}
+
+.panel-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 1px;
+}
+
+.panel-actions .icon-button {
+  width: 24px;
+  height: 24px;
+}
+
+.panel-empty {
+  padding: 10px 16px;
+  font-size: 12.5px;
   color: var(--fg-3);
 }
 
-.recent-empty {
-  padding: 4px 8px;
-  font-size: 12px;
+.panel-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  margin: 0 8px 6px;
+  padding: 0 8px;
+  border-radius: 7px;
+  background: var(--group-bg);
+  box-shadow: var(--group-ring);
   color: var(--fg-3);
+  flex-shrink: 0;
+}
+
+.panel-search:focus-within {
+  box-shadow: 0 0 0 1px var(--focus), 0 0 0 4px var(--ring);
+}
+
+.panel-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  font-size: 12.5px;
+}
+
+.panel-search input:focus {
+  box-shadow: none;
+}
+
+.recent-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 12px;
 }
 
 .recent-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 42px;
-  padding: 5px 8px;
+  gap: 9px;
+  width: calc(100% - 12px);
+  min-height: 38px;
+  margin: 0 6px;
+  padding: 4px 8px;
   border: none;
-  border-radius: 6px;
+  border-radius: 7px;
   background: none;
   text-align: left;
+  animation: side-row-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
 }
+
+@keyframes side-row-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+}
+
+.recent-row:nth-child(2) { animation-delay: 25ms; }
+.recent-row:nth-child(3) { animation-delay: 50ms; }
+.recent-row:nth-child(4) { animation-delay: 75ms; }
+.recent-row:nth-child(5) { animation-delay: 100ms; }
+.recent-row:nth-child(6) { animation-delay: 125ms; }
+.recent-row:nth-child(7) { animation-delay: 150ms; }
+.recent-row:nth-child(8) { animation-delay: 175ms; }
+.recent-row:nth-child(9) { animation-delay: 200ms; }
+.recent-row:nth-child(10) { animation-delay: 225ms; }
 
 .recent-row:hover {
   background: var(--hover);
@@ -193,15 +606,6 @@ body.row-resizing * {
 
 .recent-row.active {
   background: var(--press);
-}
-
-.recent-icon {
-  flex-shrink: 0;
-  color: var(--c-green);
-}
-
-.recent-icon.google {
-  color: var(--c-blue);
 }
 
 .recent-text {
@@ -218,12 +622,163 @@ body.row-resizing * {
 }
 
 .recent-name {
+  font-size: 13px;
+  color: var(--fg);
+}
+
+.recent-row.active .recent-name {
+  color: var(--fg-strong);
   font-weight: 500;
 }
 
 .recent-where {
   font-size: 11.5px;
   color: var(--fg-3);
+}
+
+/* File icons get a color per format, on a soft tile of the same color. */
+.file-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  flex-shrink: 0;
+  color: var(--file-color);
+  background: color-mix(in srgb, var(--file-color) 14%, transparent);
+}
+
+.file-icon.excel { --file-color: var(--c-green); }
+.file-icon.csv { --file-color: var(--c-cyan); }
+.file-icon.ods { --file-color: var(--c-orange); }
+.file-icon.google { --file-color: var(--c-blue); }
+
+.doc-pill .file-icon,
+.welcome-row .file-icon {
+  width: auto;
+  height: auto;
+  background: none;
+}
+
+/* ---- Meme button ---- */
+
+.meme-button {
+  position: absolute;
+  right: 18px;
+  bottom: 56px;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  /* The sidebar's group look: its color with the same light tint and ring. */
+  background: linear-gradient(var(--group-bg), var(--group-bg)), var(--chrome);
+  color: var(--fg-2);
+  box-shadow: var(--group-ring), 0 4px 14px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s cubic-bezier(0.34, 1.45, 0.5, 1);
+}
+
+/* Dark mode uses the sidebar's darker group tint. */
+:root:not([data-theme="light"]) .meme-button {
+  background: linear-gradient(rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.025)), var(--chrome);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.045), 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+:root[data-theme="light"] .meme-button {
+  box-shadow: var(--group-ring), 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+/* Without a sheet there is no status bar under it. */
+.content:has(.welcome) .meme-button {
+  bottom: 16px;
+}
+
+.meme-button:hover {
+  transform: scale(1.08);
+}
+
+.meme-button:active {
+  transform: scale(0.95);
+}
+
+.meme-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  animation: menu-in 0.12s ease-out;
+}
+
+.meme-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(720px, 80vw);
+  max-height: 88vh;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--bg-subtle);
+  box-shadow: var(--shadow-menu);
+}
+
+.meme-head,
+.meme-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meme-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-strong);
+}
+
+.meme-body {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.meme-body img {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: 8px;
+}
+
+.meme-body img.loading {
+  display: none;
+}
+
+.meme-status {
+  padding: 100px 0;
+  font-size: 12.5px;
+  color: var(--fg-3);
+}
+
+.meme-source {
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  color: var(--fg-3);
+}
+
+.meme-source:hover {
+  color: var(--fg);
+  text-decoration: underline;
 }
 
 /* ---- Toolbar ---- */
@@ -1051,49 +1606,124 @@ body.row-resizing * {
   color: var(--fg);
 }
 
-/* ---- Empty state ---- */
+/* ---- Welcome ---- */
 
-.empty {
+.welcome {
   flex: 1;
   display: grid;
   place-items: center;
   padding: 24px;
+  overflow: auto;
   background-image: radial-gradient(var(--dots) 1px, transparent 1px);
   background-size: 16px 16px;
 }
 
-.placeholder {
+.welcome-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  max-width: 400px;
-  padding: 28px 32px;
+  width: 440px;
+  max-width: 100%;
+  padding: 28px 28px 20px;
+  border-radius: 14px;
+  background: var(--bg);
+  box-shadow: var(--shadow-dialog);
   text-align: center;
   color: var(--fg-3);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  animation: pop-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.1);
 }
 
-.placeholder h3 {
+/* The app icon. macOS rounds the icon itself, so the PNG is square. */
+.welcome-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 13px;
+}
+
+.welcome-card h3 {
   margin: 8px 0 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
-  color: var(--fg);
+  color: var(--fg-strong);
 }
 
-.placeholder p {
-  margin: 0;
+.welcome-card p {
+  margin: 0 0 8px;
+  line-height: 1.5;
 }
 
-.placeholder-actions {
+.welcome-actions {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
   gap: 8px;
-  min-width: 240px;
+  align-self: stretch;
+}
+
+.welcome-actions .button {
+  justify-content: flex-start;
+}
+
+.welcome-actions .kbd {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: inherit;
+  opacity: 0.6;
+}
+
+/* On the light primary button, the dark key background hid the shortcut. */
+.button.primary .kbd {
+  background: transparent;
+  border-color: color-mix(in srgb, currentColor 35%, transparent);
+}
+
+.welcome-recent {
+  align-self: stretch;
   margin-top: 14px;
+  text-align: left;
+}
+
+.welcome-recent .recent-title {
+  padding: 4px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--fg-3);
+}
+
+.welcome-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+  font-size: 13px;
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+.welcome-row:hover {
+  background: var(--hover);
+}
+
+.welcome-row-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  max-width: 60%;
+}
+
+.welcome-row-where {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+  color: var(--fg-3);
 }
 
 /* ---- Overlays ---- */
@@ -1160,129 +1790,25 @@ body.row-resizing * {
 }
 
 /* ---- Apple look ----
-   Light mode uses the macOS sidebar material and system grays. Dark mode keeps
-   its colors and gets the same structure: grouped controls, raised selected
-   states, pill tabs, accent-colored selection. */
-
-:root {
-  --focus: var(--accent);
-  --ring: color-mix(in srgb, var(--accent) 30%, transparent);
-  --chrome: var(--bg-subtle);
-  --group-bg: rgba(255, 255, 255, 0.05);
-  --group-ring: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --raised: rgba(255, 255, 255, 0.13);
-  --raised-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
-  --head-bg: var(--bg-subtle);
-}
-
-:root[data-theme="light"] {
-  --chrome: #f7f7f9;
-  --group-bg: rgba(0, 0, 0, 0.05);
-  --group-ring: inset 0 0 0 0.5px rgba(0, 0, 0, 0.05);
-  --raised: #ffffff;
-  --raised-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.2), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
-  --head-bg: #f7f7f9;
-}
+   Grouped controls, raised selected states, pill tabs and accent-colored
+   selection, as in Lookout. */
 
 html,
 body {
   background: transparent;
 }
 
-.main {
-  background: var(--bg);
-}
-
 input[type="checkbox"] {
   accent-color: var(--accent);
 }
 
-/* Sidebar */
-
-:root[data-theme="light"] .sidebar {
-  background: rgba(244, 244, 247, 0.6);
-  border-right-color: rgba(0, 0, 0, 0.1);
-}
-
-.side-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 2px 10px 10px;
-}
-
-.side-item {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  height: 30px;
-  padding: 0 8px;
-  border: none;
-  border-radius: 7px;
-  background: none;
-  color: var(--fg);
-  font-size: 13px;
-  text-align: left;
-}
-
-.side-item:hover {
-  background: var(--hover);
-}
-
-.side-item:active {
-  background: var(--press);
-}
-
-.side-icon {
-  flex-shrink: 0;
-  color: var(--accent);
-}
-
-.recent {
-  padding: 0 10px 12px;
-}
-
-.recent-title {
-  padding: 10px 8px 4px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--fg-3);
-}
-
-.recent-row {
-  min-height: 40px;
-  border-radius: 7px;
-}
-
-.recent-row.active {
-  background: var(--press);
-}
-
-/* Title bar, toolbar, formula bar */
-
-.titlebar {
-  background: var(--chrome);
-}
-
-.doc-title strong {
-  font-size: 13.5px;
-}
-
-.kind-tag {
-  border: none;
-  border-radius: 5px;
-  background: var(--group-bg);
-  font-family: var(--font);
-  font-size: 11px;
-  font-weight: 500;
-  padding: 2px 7px;
-}
+/* Toolbar, formula bar */
 
 .toolbar {
   gap: 6px;
   height: 46px;
-  padding: 0 12px;
-  background: var(--chrome);
+  padding: 0 10px;
+  background: transparent;
 }
 
 .tool-group {
@@ -1358,7 +1884,15 @@ input[type="checkbox"] {
 }
 
 .findbar {
-  background: var(--chrome);
+  background: color-mix(in srgb, var(--fg) 2.5%, var(--bg));
+  animation: bar-in 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
+
+@keyframes bar-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 
 /* Buttons and menus */
@@ -1432,22 +1966,6 @@ input[type="checkbox"] {
 .menu-check {
   flex-shrink: 0;
   color: var(--fg-2);
-}
-
-.accent-button {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  border: 1px solid var(--input-border);
-  background: var(--bg-muted);
-  color: var(--accent);
-  transition: background 0.12s;
-}
-
-.accent-button:hover {
-  background: var(--button-hover);
 }
 
 .accent-dot {
@@ -1524,9 +2042,9 @@ input[type="checkbox"] {
 
 .statusbar {
   align-items: center;
-  height: 38px;
-  padding: 0 8px;
-  background: var(--chrome);
+  height: 40px;
+  padding: 0 10px 0 6px;
+  background: color-mix(in srgb, var(--fg) 2%, var(--bg));
 }
 
 .sheet-tabs {
@@ -1563,14 +2081,6 @@ input[type="checkbox"] {
 .status-info {
   font-family: var(--font);
   font-size: 12px;
-}
-
-/* Empty state */
-
-.placeholder {
-  border-radius: 14px;
-  border: none;
-  box-shadow: var(--shadow-dialog);
 }
 
 .sheet-tab {
@@ -1616,4 +2126,170 @@ input[type="checkbox"] {
 
 .notice-text p + p {
   margin-top: 4px;
+}
+
+/* ---- Window layout ---- */
+
+/* One button; clicking it opens a panel of layout tiles, like the notifications panel. */
+.window-snap {
+  position: relative;
+  display: inline-flex;
+}
+
+.snap-trigger {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--fg-3);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.snap-trigger:hover,
+.snap-trigger.open {
+  color: var(--fg-strong);
+  background: var(--hover);
+}
+
+.snap-trigger.open {
+  background: var(--raised);
+  box-shadow: var(--raised-shadow);
+}
+
+.snap-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: -6px;
+  z-index: 70;
+  width: 268px;
+  padding: 10px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-subtle) 82%, transparent);
+  backdrop-filter: blur(28px) saturate(1.7);
+  box-shadow: var(--shadow-menu);
+  transform-origin: calc(100% - 20px) 0;
+  animation: snap-panel-in 0.26s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+
+:root[data-theme="light"] .snap-panel {
+  background: rgba(250, 250, 252, 0.86);
+}
+
+@keyframes snap-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.94);
+  }
+}
+
+.snap-title {
+  padding: 2px 4px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-2);
+}
+
+.snap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.snap-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 6px 8px;
+  border: none;
+  border-radius: 10px;
+  background: var(--group-bg);
+  box-shadow: var(--group-ring);
+  color: var(--fg-2);
+  animation: snap-tile-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  transition:
+    background-color 0.12s,
+    color 0.12s,
+    transform 0.15s cubic-bezier(0.34, 1.45, 0.5, 1);
+}
+
+.snap-tile:nth-child(2) { animation-delay: 30ms; }
+.snap-tile:nth-child(3) { animation-delay: 60ms; }
+.snap-tile:nth-child(4) { animation-delay: 90ms; }
+
+@keyframes snap-tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.95);
+  }
+}
+
+.snap-tile:hover {
+  color: var(--fg-strong);
+  background: var(--hover);
+}
+
+.snap-tile:active {
+  transform: scale(0.96);
+}
+
+.snap-tile.active {
+  color: var(--fg-strong);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.snap-picture {
+  margin-bottom: 5px;
+}
+
+.snap-screen {
+  fill: color-mix(in srgb, var(--fg) 5%, transparent);
+  stroke: color-mix(in srgb, var(--fg) 30%, transparent);
+  stroke-width: 1.5;
+}
+
+.snap-window {
+  fill: color-mix(in srgb, var(--fg) 32%, transparent);
+  transition:
+    fill 0.15s,
+    transform 0.25s cubic-bezier(0.34, 1.45, 0.5, 1);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.snap-tile:hover .snap-window,
+.snap-tile.active .snap-window {
+  fill: var(--accent);
+}
+
+.snap-tile:hover .snap-window {
+  transform: scale(1.04);
+}
+
+.snap-label {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.snap-hint {
+  font-size: 10.5px;
+  color: var(--fg-3);
+}
+
+/* The light theme's white button style would otherwise cover the red of a danger button. */
+:root[data-theme="light"] .button.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+:root[data-theme="light"] .button.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 88%, #000);
+  border-color: color-mix(in srgb, var(--danger) 88%, #000);
 }

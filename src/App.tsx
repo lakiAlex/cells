@@ -45,7 +45,9 @@ import {
   Trash2,
   TriangleAlert,
   X,
-} from "lucide-react";
+  Cat,
+  SquaresUnite,
+} from "./components/icons";
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import {
   api,
@@ -68,12 +70,21 @@ import { ChoiceDialog, GoogleDialog, InputDialog, SortDialog } from "./component
 import { FindBar } from "./components/FindBar";
 import { Grid, selectionRect, type Cell, type Selection } from "./components/Grid";
 import { SheetTabs } from "./components/SheetTabs";
-import { Sidebar } from "./components/Sidebar";
+import { MemeButton } from "./components/Meme";
+import { WindowSnap } from "./components/WindowSnap";
+import { RecentIcon, RecentPanel, SidebarIcon, folderOf, type SidebarIconName } from "./components/Sidebar";
 import { Toolbar, ViewControls } from "./components/Toolbar";
 import { ACCENT_KEY, ACCENTS, savedAccent, type AccentId } from "./lib/accent";
+import appIcon from "../src-tauri/icons/128x128@2x.png";
 import { ValueFilter } from "./components/ValueFilter";
 
 const THEME_KEY = "cells.theme";
+const SIDE_KEY = "cells.sideWidth";
+const PANEL_KEY = "cells.panel";
+const COMPACT_KEY = "cells.compactBar";
+const MEMES_KEY = "cells.memes";
+
+type Panel = "recent";
 
 type Theme = "dark" | "light";
 type DialogState =
@@ -150,6 +161,11 @@ export default function App() {
   const [dropping, setDropping] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => (document.documentElement.dataset.theme === "light" ? "light" : "dark"));
   const [accent, setAccent] = useState<AccentId>(savedAccent);
+  const [themeSwitched, setThemeSwitched] = useState(false);
+  const [panel, setPanel] = useState<Panel | null>(() => (localStorage.getItem(PANEL_KEY) === "none" ? null : "recent"));
+  const [sideWidth, setSideWidth] = useState(() => Number(localStorage.getItem(SIDE_KEY)) || 260);
+  const [compact, setCompact] = useState(() => localStorage.getItem(COMPACT_KEY) === "1");
+  const [memes, setMemes] = useState(() => localStorage.getItem(MEMES_KEY) !== "0");
 
   // Event listeners registered once read the latest state through this ref.
   const latest = useRef({ doc, sheet, layout, selection });
@@ -173,6 +189,10 @@ export default function App() {
     localStorage.setItem(THEME_KEY, theme);
     void getCurrentWindow().setTheme(theme).catch(() => undefined);
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem(PANEL_KEY, panel ?? "none");
+  }, [panel]);
 
   // ---- Layout and data ----
 
@@ -409,10 +429,13 @@ export default function App() {
     void refreshRecent();
     const openPending = async () => {
       const paths = await api.takePendingOpens();
-      if (paths[0]) openPath(paths[0]);
+      // The newest file wins when several arrived at once.
+      const path = paths[paths.length - 1];
+      if (path) openPath(path);
     };
-    void openPending();
+    // Listen first, then take what is already waiting, so a file that arrives in between is not missed.
     const unlistenOpen = listen("open-paths", () => void openPending());
+    void unlistenOpen.then(() => openPending());
     const unlistenDrop = getCurrentWebview().onDragDropEvent((event) => {
       const p = event.payload;
       if (p.type === "enter" || p.type === "over") setDropping(true);
@@ -630,7 +653,10 @@ export default function App() {
       const key = e.key.toLowerCase();
       const hasDoc = !!latest.current.doc;
       if (key === "r") e.preventDefault(); // Cmd+R would reload the web view.
-      if (key === "o") {
+      if (key === "e" && e.shiftKey) {
+        e.preventDefault();
+        setPanel((p) => (p === "recent" ? null : "recent"));
+      } else if (key === "o") {
         e.preventDefault();
         openFile();
       } else if (key === "n") {
@@ -999,88 +1025,205 @@ export default function App() {
   const activeStyle = activeMatches ? activeInfo!.info.style : null;
   const formulaValue = formulaBar ?? (activeMatches ? activeInfo!.info.content : "");
 
-  return (
-    <div className="app">
-      <Sidebar
-        recent={recent}
-        activeLocation={doc?.location ?? null}
-        onNew={newDoc}
-        onOpenFile={openFile}
-        onOpenGoogle={() => guardUnsaved(() => setDialog({ type: "google" }))}
-        onOpenRecent={openRecent}
-        onRecentMenu={recentMenu}
-      />
+  // ---- Sidebar ----
 
-      <main className="main">
-        <header className="titlebar" data-tauri-drag-region>
-          <div className="doc-title" data-tauri-drag-region>
-            {doc ? (
-              <>
-                <strong data-tauri-drag-region>{doc.title}</strong>
-                <span className="kind-tag">{doc.kind}</span>
-                {doc.dirty && <span className="edited">Edited</span>}
-              </>
-            ) : (
-              <span className="muted" data-tauri-drag-region>
-                No file open
+  const isGoogle = !!doc?.location.startsWith("http");
+
+  const toggleCompact = () => {
+    setCompact(!compact);
+    localStorage.setItem(COMPACT_KEY, compact ? "0" : "1");
+  };
+
+  const startResize = (e: ReactMouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = sideWidth;
+    const move = (ev: MouseEvent) => setSideWidth(Math.max(200, Math.min(520, startW + ev.clientX - startX)));
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+      document.body.classList.remove("col-resizing");
+      setSideWidth((w) => (localStorage.setItem(SIDE_KEY, String(w)), w));
+    };
+    document.body.classList.add("col-resizing");
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
+
+  const sideButton = (name: SidebarIconName, tip: string, onClick: () => void, options: { active?: boolean; disabled?: boolean } = {}) => (
+    <button
+      type="button"
+      className={`activity-button${options.active ? " active" : ""}`}
+      data-tip={tip}
+      aria-label={tip}
+      disabled={options.disabled}
+      onClick={onClick}
+    >
+      <SidebarIcon name={name} filled={options.active} />
+    </button>
+  );
+
+  const settingsMenu = (e: ReactMouseEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const items: MenuEntry[] = [
+      {
+        label: "Appearance",
+        icon: theme === "dark" ? <Moon size={14} /> : <Sun size={14} />,
+        detail: theme === "dark" ? "Dark" : "Light",
+        submenu: {
+          items: (["light", "dark"] as Theme[]).map((t) => ({
+            label: t === "dark" ? "Dark" : "Light",
+            checked: theme === t,
+            onSelect: () => {
+              setThemeSwitched(true);
+              setTheme(t);
+            },
+          })),
+        },
+      },
+      {
+        label: "Accent color",
+        icon: <Palette size={14} />,
+        detail: ACCENTS.find((a) => a.id === accent)?.label,
+        submenu: {
+          items: ACCENTS.map((a) => ({
+            label: a.label,
+            icon: <span className="accent-dot" style={{ background: a.color }} />,
+            checked: a.id === accent,
+            onSelect: () => setAccent(a.id),
+          })),
+        },
+      },
+      "separator",
+      {
+        label: "Memes",
+        icon: <Cat size={14} />,
+        detail: memes ? "On" : "Off",
+        submenu: {
+          items: [true, false].map((on) => ({
+            label: on ? "Enable" : "Disable",
+            checked: memes === on,
+            onSelect: () => {
+              setMemes(on);
+              localStorage.setItem(MEMES_KEY, on ? "1" : "0");
+            },
+          })),
+        },
+      },
+    ];
+    setMenu({ x: rect.right + 8, y: Math.max(8, rect.bottom - 30 - items.length * 26), items });
+  };
+
+  return (
+    <div className={`app${compact ? " compact" : ""}`} style={{ ["--side-w" as string]: panel ? `${sideWidth}px` : "0px" }}>
+      <header className="titlebar" data-tauri-drag-region>
+        <div className="titlebar-left" data-tauri-drag-region>
+          <span className="brand" data-tauri-drag-region>
+            <SquaresUnite size={15} strokeWidth={2.2} />
+            <span className="brand-name" data-tauri-drag-region>
+              Cells
+            </span>
+          </span>
+        </div>
+        <div className="doc-title" data-tauri-drag-region>
+          {doc ? (
+            <>
+              <span className="doc-pill" title={doc.location || doc.title}>
+                <RecentIcon item={{ kind: isGoogle ? "google" : "file", location: doc.location || doc.title, title: doc.title, openedAt: 0 }} size={14} />
+                <strong>{doc.title}</strong>
+                {doc.dirty && <span className="edited-dot" title="Edited" />}
               </span>
-            )}
+              <span className="kind-tag" data-tauri-drag-region>
+                {doc.kind}
+              </span>
+              {doc.location && !isGoogle && (
+                <span className="doc-where" data-tauri-drag-region>
+                  {folderOf(doc.location)}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="doc-where" data-tauri-drag-region>
+              No file open
+            </span>
+          )}
+        </div>
+        <div className="titlebar-actions">
+          {doc && (
+            <>
+              <button type="button" className="button small ghost" onClick={() => void saveAs()}>
+                Save As
+              </button>
+              <button
+                type="button"
+                className={`button small${doc.dirty ? " primary" : ""}`}
+                disabled={!doc.dirty}
+                title={doc.canSave ? "Save (⌘S)" : "This file is saved with Save As"}
+                onClick={() => void save()}
+              >
+                <Save size={13} /> Save
+              </button>
+            </>
+          )}
+          <WindowSnap />
+          <button
+            type="button"
+            role="switch"
+            aria-checked={theme === "dark"}
+            className={`theme-switch ${theme}${themeSwitched ? " switched" : ""}`}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            onClick={() => {
+              setThemeSwitched(true);
+              setTheme((t) => (t === "dark" ? "light" : "dark"));
+            }}
+          >
+            <span className="theme-thumb" />
+            <span className="theme-option sun">
+              <Sun size={15} strokeWidth={1.9} />
+            </span>
+            <span className="theme-option moon">
+              <Moon size={12.5} strokeWidth={1.9} />
+            </span>
+          </button>
+        </div>
+      </header>
+
+      <nav className="activity-bar">
+        <div className="activity-group">
+          {sideButton("recent", "Recent files (⇧⌘E)", () => setPanel((p) => (p === "recent" ? null : "recent")), { active: panel === "recent" })}
+          {sideButton("find", "Find and replace (⌘F)", openFind, { disabled: !doc })}
+        </div>
+        <div className="activity-group">
+          {sideButton("new", "New spreadsheet (⌘N)", newDoc)}
+          {sideButton("open", "Open file (⌘O)", openFile)}
+          {sideButton("google", "Open Google Sheet", () => guardUnsaved(() => setDialog({ type: "google" })))}
+        </div>
+        <span className="activity-spacer" />
+        <div className="activity-group">
+          {sideButton("sidebar", compact ? "Expand sidebar" : "Minimize sidebar", toggleCompact)}
+          <button type="button" className="activity-button" data-tip="Settings" aria-label="Settings" onClick={settingsMenu}>
+            <SidebarIcon name="settings" />
+          </button>
+        </div>
+      </nav>
+
+      <aside className="side-panel">
+        {panel === "recent" && (
+          <div key={panel} className="side-panel-body">
+            <RecentPanel
+              recent={recent}
+              activeLocation={doc?.location ?? null}
+              onClose={() => setPanel(null)}
+              onOpenRecent={openRecent}
+              onRecentMenu={recentMenu}
+            />
           </div>
-          <div className="titlebar-actions">
-            {doc && (
-              <>
-                <button type="button" className="button small" onClick={() => void saveAs()}>
-                  Save As
-                </button>
-                <button
-                  type="button"
-                  className={`button small${doc.dirty ? " primary" : ""}`}
-                  disabled={!doc.dirty}
-                  title={doc.canSave ? "Save (⌘S)" : "This file is saved with Save As"}
-                  onClick={() => void save()}
-                >
-                  <Save size={13} /> Save
-                </button>
-              </>
-            )}
-            <button
-              type="button"
-              className="accent-button"
-              title="Accent color"
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setMenu({
-                  x: rect.left,
-                  y: rect.bottom + 6,
-                  items: ACCENTS.map((a) => ({
-                    label: a.label,
-                    icon: <span className="accent-dot" style={{ background: a.color }} />,
-                    checked: a.id === accent,
-                    onSelect: () => setAccent(a.id),
-                  })),
-                });
-              }}
-            >
-              <Palette size={15} />
-            </button>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={theme === "dark"}
-              className={`theme-switch ${theme}`}
-              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-            >
-              <span className="theme-thumb" />
-              <span className="theme-option sun">
-                <Sun size={14} />
-              </span>
-              <span className="theme-option moon">
-                <Moon size={14} />
-              </span>
-            </button>
-          </div>
-        </header>
+        )}
+        {panel && <div className="side-resize" onMouseDown={startResize} />}
+      </aside>
+
+      <main className="content">
+        {memes && <MemeButton />}
 
         {doc && layout ? (
           <>
@@ -1265,22 +1408,44 @@ export default function App() {
             </footer>
           </>
         ) : (
-          <div className="empty">
-            <div className="placeholder">
-              <FileSpreadsheet size={34} strokeWidth={1.4} />
-              <h3>Open a spreadsheet</h3>
-              <p className="muted">CSV, Excel (.xlsx, .xls), OpenDocument, or a Google Sheets link. You can also drop a file here.</p>
-              <div className="placeholder-actions">
+          <div className="welcome">
+            <div className="welcome-card">
+              <img className="welcome-icon" src={appIcon} alt="" />
+              <h3>Cells</h3>
+              <p className="muted">Open a CSV, Excel or OpenDocument file, or a Google Sheets link. You can also drop a file on the window.</p>
+              <div className="welcome-actions">
                 <button type="button" className="button primary" onClick={openFile}>
-                  <FolderOpen size={14} /> Open file
+                  <FolderOpen size={14} /> Open File… <span className="kbd">⌘O</span>
                 </button>
                 <button type="button" className="button" onClick={newDoc}>
-                  <FilePlus2 size={14} /> New spreadsheet
+                  <FilePlus2 size={14} /> New Spreadsheet <span className="kbd">⌘N</span>
                 </button>
                 <button type="button" className="button" onClick={() => setDialog({ type: "google" })}>
-                  <Link size={14} /> Open Google Sheet
+                  <Link size={14} /> Open Google Sheet…
                 </button>
               </div>
+              {recent.length > 0 && (
+                <div className="welcome-recent">
+                  <div className="recent-title">Recent files</div>
+                  {recent.slice(0, 6).map((item) => (
+                    <button
+                      key={item.location}
+                      type="button"
+                      className="welcome-row"
+                      title={item.location}
+                      onClick={() => openRecent(item)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        recentMenu(e, item);
+                      }}
+                    >
+                      <RecentIcon item={item} size={15} />
+                      <span className="welcome-row-name">{item.title}</span>
+                      <span className="welcome-row-where">{item.kind === "google" ? "Google Sheets" : folderOf(item.location)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
