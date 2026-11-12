@@ -79,7 +79,29 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 
-export { SquaresUnite } from "lucide-react";
+// Lucide squares-unite, drawn like the app icon: a thick raised band with a side face
+// and a fold along the diagonal. Colors come from the --brand-* variables in styles.css.
+const SQUARES_UNITE =
+  "M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3a1 1 0 0 0 1 1h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-3a1 1 0 0 0-1-1z";
+
+export function BrandMark({ size = 17 }: { size?: number }) {
+  return (
+    <svg className="brand-mark" width={size} height={size} viewBox="-0.5 -0.5 25 25" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="brand-mark-top" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="24" y2="24">
+          <stop offset="0" stopColor="var(--brand-top-1)" />
+          <stop offset="1" stopColor="var(--brand-top-2)" />
+        </linearGradient>
+        <clipPath id="brand-mark-fold">
+          <path d="M24.5 -0.5V24.5H-0.5z" />
+        </clipPath>
+      </defs>
+      <path d={SQUARES_UNITE} stroke="var(--brand-side)" strokeWidth={3.4} transform="translate(0.35 0.7)" />
+      <path d={SQUARES_UNITE} stroke="url(#brand-mark-top)" strokeWidth={3.4} />
+      <path d={SQUARES_UNITE} stroke="var(--brand-fold)" strokeWidth={3.4} clipPath="url(#brand-mark-fold)" />
+    </svg>
+  );
+}
 
 interface IconProps {
   size?: number;

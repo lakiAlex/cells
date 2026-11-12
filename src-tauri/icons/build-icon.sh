@@ -2,9 +2,9 @@
 # Rebuilds Assets.car and icon.icns from AppIcon.icon (Icon Composer format).
 # macOS 26 draws a light border around apps that only ship a legacy .icns, so the
 # bundle also carries Assets.car, selected by CFBundleIconName in ../Info.plist.
-# AppIcon.icon/Assets/background.png is the glyph on a flat #14120b background, made with ~/Next/app-icon-kit/make_icon.py
-# with "#14120b" as the source and the Lucide squares-unite icon (lucide-static 1.66.0), the glyph at 50% of the icon width.
-# After replacing it, run `pnpm tauri icon src-tauri/icons/AppIcon.icon/Assets/background.png` from the project root,
+# AppIcon.icon/Assets/background.png is the Lucide squares-unite glyph as a raised white band on a graphite background,
+# rendered by `python3 make-icon.py` in this folder (needs Pillow).
+# After regenerating it, run `pnpm tauri icon src-tauri/icons/AppIcon.icon/Assets/background.png` from the project root,
 # delete the android and ios folders it adds, then run this script (tauri icon overwrites icon.icns).
 set -e
 cd "$(dirname "$0")"

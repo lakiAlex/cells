@@ -46,7 +46,7 @@ import {
   TriangleAlert,
   X,
   Cat,
-  SquaresUnite,
+  BrandMark,
 } from "./components/icons";
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import {
@@ -1120,7 +1120,7 @@ export default function App() {
       <header className="titlebar" data-tauri-drag-region>
         <div className="titlebar-left" data-tauri-drag-region>
           <span className="brand" data-tauri-drag-region>
-            <SquaresUnite size={15} strokeWidth={2.2} />
+            <BrandMark />
             <span className="brand-name" data-tauri-drag-region>
               Cells
             </span>
