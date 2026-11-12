@@ -102,17 +102,11 @@ brew install --cask lakialex/tap/cells
 
 Homebrew only loads casks from other taps once they are trusted, which the first line does.
 
-Or download the `.dmg` from [Releases](../../releases), open it, and drag `Cells` into the Applications folder. The build runs on Apple Silicon and Intel Macs and needs macOS 11 or later.
+The build runs on Apple Silicon and Intel Macs and needs macOS 11 or later. Homebrew is the only way to install it.
 
-The app is not signed with an Apple Developer certificate or notarized, so the first time you open a download macOS says it cannot be verified. Either right-click the app and choose Open, then confirm once, or run:
+The app is not signed with an Apple Developer certificate or notarized. The cask removes the quarantine flag after install, so macOS opens it without the "cannot be verified" message.
 
-```sh
-xattr -dr com.apple.quarantine /Applications/Cells.app
-```
-
-The Homebrew cask does this for you.
-
-Cells checks GitHub for new versions. When one is out, an Update button shows in the title bar with what changed, and Update and restart installs it. Versions from before the update button need one `brew upgrade --cask cells` or a new download to get it.
+Cells checks GitHub for new versions. When one is out, an Update button shows in the title bar with what changed, and Update and restart installs it. Versions from before the update button need one `brew upgrade --cask cells` to get it.
 
 ## Build from source
 
@@ -121,7 +115,7 @@ Requirements: [Rust](https://rustup.rs) (stable), Node.js 20 or later, and [pnpm
 ```sh
 pnpm install
 pnpm tauri dev                  # run in development mode
-pnpm tauri build                # build Cells.app and the .dmg in src-tauri/target/release/bundle/
+pnpm tauri build                # build Cells.app in src-tauri/target/release/bundle/
 ```
 
 ## Tests

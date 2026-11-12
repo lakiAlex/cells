@@ -1,6 +1,6 @@
 name: Homebrew
 
-# When a release is published, sets the new version and the DMG's checksum in
+# When a release is published, sets the new version and the app archive's checksum in
 # the cask in lakiAlex/homebrew-tap. TAP_DEPLOY_KEY is a deploy key with write
 # access to that repository. Run it by hand with a tag to redo a release.
 on:
@@ -18,14 +18,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download the DMG
+      - name: Download the app archive
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
-          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*_universal.dmg' --dir dmg
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*_universal.app.tar.gz' --dir app
           echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
-          echo "SHA256=$(sha256sum dmg/*.dmg | cut -d' ' -f1)" >> "$GITHUB_ENV"
+          echo "SHA256=$(sha256sum app/*.app.tar.gz | cut -d' ' -f1)" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v4
         with:
