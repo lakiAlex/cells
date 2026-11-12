@@ -43,6 +43,8 @@ jobs:
           # Signs the update files the apps download (see the updater in tauri.conf.json).
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+          # Aptabase app key for the anonymous usage stats, a repository variable.
+          APTABASE_APP_KEY: ${{ vars.APTABASE_APP_KEY }}
         with:
           tagName: v__VERSION__
           releaseName: "Cells __VERSION__"

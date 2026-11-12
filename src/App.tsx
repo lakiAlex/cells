@@ -46,6 +46,7 @@ import {
   TriangleAlert,
   X,
   Cat,
+  ChartColumn,
   BrandMark,
 } from "./components/icons";
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
@@ -78,6 +79,7 @@ import { Toolbar, ViewControls } from "./components/Toolbar";
 import { ACCENT_KEY, ACCENTS, savedAccent, type AccentId } from "./lib/accent";
 import appIcon from "../src-tauri/icons/128x128@2x.png";
 import { ValueFilter } from "./components/ValueFilter";
+import { saveUsageStats, usageStatsOn } from "./lib/usage";
 
 const THEME_KEY = "cells.theme";
 const SIDE_KEY = "cells.sideWidth";
@@ -167,6 +169,7 @@ export default function App() {
   const [sideWidth, setSideWidth] = useState(() => Number(localStorage.getItem(SIDE_KEY)) || 260);
   const [compact, setCompact] = useState(() => localStorage.getItem(COMPACT_KEY) === "1");
   const [memes, setMemes] = useState(() => localStorage.getItem(MEMES_KEY) !== "0");
+  const [usageStats, setUsageStats] = useState(usageStatsOn);
 
   // Event listeners registered once read the latest state through this ref.
   const latest = useRef({ doc, sheet, layout, selection });
@@ -1109,6 +1112,15 @@ export default function App() {
               localStorage.setItem(MEMES_KEY, on ? "1" : "0");
             },
           })),
+        },
+      },
+      {
+        label: "Anonymous usage stats",
+        icon: <ChartColumn size={14} />,
+        checked: usageStats,
+        onSelect: () => {
+          setUsageStats(!usageStats);
+          saveUsageStats(!usageStats);
         },
       },
     ];

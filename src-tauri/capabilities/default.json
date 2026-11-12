@@ -21,6 +21,7 @@
     "clipboard-manager:allow-write-text",
     "updater:default",
     "process:allow-restart",
+    "aptabase:allow-track-event",
     "notification:default"
   ]
 }

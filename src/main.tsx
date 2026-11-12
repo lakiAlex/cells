@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { trackAppStarted } from "./lib/usage";
 import { savedAccent } from "./lib/accent";
 import "./styles.css";
 
@@ -13,3 +14,4 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <App />
   </React.StrictMode>,
 );
+trackAppStarted();

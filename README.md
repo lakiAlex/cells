@@ -108,6 +108,10 @@ The app is not signed with an Apple Developer certificate or notarized. The cask
 
 Cells checks GitHub for new versions. When one is out, an Update button shows in the title bar with what changed, and Update and restart installs it. Versions from before the update button need one `brew upgrade --cask cells` to get it.
 
+## Usage stats
+
+Cells sends one anonymous event to [Aptabase](https://aptabase.com) when it starts, to count how many people use it. The event has the app version, macOS version and locale, with no personal data and nothing about your files. Aptabase uses the IP address to look up the country and does not store it. Turn it off in the gear menu, Anonymous usage stats. Builds from source send nothing.
+
 ## Build from source
 
 Requirements: [Rust](https://rustup.rs) (stable), Node.js 20 or later, and [pnpm](https://pnpm.io).

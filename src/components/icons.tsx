@@ -21,6 +21,7 @@ import {
   Cancel01Icon,
   CaseSensitiveIcon,
   CatIcon,
+  ChartColumnIcon,
   ClipboardPasteIcon,
   Clock01Icon,
   Copy01Icon,
@@ -137,6 +138,7 @@ export const BetweenVerticalStart = icon(InsertColumnLeftIcon);
 export const Bold = icon(TextBoldIcon);
 export const CaseSensitive = icon(CaseSensitiveIcon);
 export const Cat = icon(CatIcon);
+export const ChartColumn = icon(ChartColumnIcon);
 export const Check = icon(Tick02Icon);
 export const ChevronDown = icon(ArrowDown01Icon);
 export const ChevronRight = icon(ArrowRight01Icon);
