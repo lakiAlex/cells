@@ -44,4 +44,9 @@ jobs:
           git config user.name "Lazar Momcilovic"
           git config user.email "lakialekscs@gmail.com"
           git commit -am "Cells $VERSION"
-          git push
+          # Another app can push to the tap at the same time, so rebase on it and retry.
+          for attempt in 1 2 3; do
+            git pull --rebase -q && git push && exit 0
+            sleep 5
+          done
+          exit 1
