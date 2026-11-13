@@ -146,7 +146,9 @@ body.col-resizing .app {
   --brand-top-1: #ffffff;
   --brand-top-2: #d9dbdf;
   --brand-side: #7c7f85;
-  --brand-fold: rgba(60, 66, 76, 0.16);
+  --brand-pad: #a9adb4;
+  --brand-hole: #2a2b2f;
+  --brand-back: #8e9298;
   flex-shrink: 0;
   overflow: visible;
 }
@@ -155,7 +157,9 @@ body.col-resizing .app {
   --brand-top-1: #3a3b3f;
   --brand-top-2: #1a1b1d;
   --brand-side: #9a9ca1;
-  --brand-fold: rgba(0, 0, 0, 0.22);
+  --brand-pad: #6b6e75;
+  --brand-hole: #f2f3f5;
+  --brand-back: #9a9ca1;
 }
 
 .brand-name {

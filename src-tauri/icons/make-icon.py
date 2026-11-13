@@ -1,210 +1,103 @@
-"""Renders AppIcon.icon/Assets/background.png: the glyph in PATHS as a raised white band on a
-dark graphite background, with a drop shadow, side faces, a fold and edge highlights.
-The same script is used for Cells, Lookout, Dispatch, Patchy and Backplay; only the glyph
-settings below differ.
+"""Renders AppIcon.icon/Assets/background.png: a white spreadsheet with a header row, grid lines and a
+selected cell, in front of a grey sheet, on a dark graphite background, with soft shadows and a light bevel.
+The image is a full square; macOS rounds the corners.
 
 Usage: python3 make-icon.py [out.png]   (needs Pillow, so not with -I)
 """
-import math
 import os
-import re
 import sys
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 SIZE = 1024
-SS = 3  # supersampling for the glyph mask
-GLYPH_WIDTH = 0.50  # Lucide 24 unit box as a fraction of the icon width
-STROKE = 3.4  # band width in glyph units (the Lucide original uses 2)
-DEPTH = 16  # extrusion depth in px
-LIGHT = (-0.55, -0.83)  # light comes from the top left
+SS = 4  # supersampling for the shapes
+RADIUS = SIZE * 0.2237  # corner radius of the system mask, used for the rim
 
-# squares-unite from lucide-react 1.66.0, in its 24 unit box
-PATHS = [
-    "M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3a1 1 0 0 0 1 1h3a2 2 0 0 1 2 2v10"
-    "a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-3a1 1 0 0 0-1-1z",
-]
-
-
-def path_points(d, step):
-    """Samples an SVG path (M, H, V, L, A, Z, absolute and relative) into points."""
-    tokens = re.findall(r"[A-Za-z]|-?(?:\d+\.\d*|\.\d+|\d+)", d)
-    pts, i, cmd = [], 0, None
-    x = y = sx = sy = 0.0
-
-    def num():
-        nonlocal i
-        i += 1
-        return float(tokens[i - 1])
-
-    def line_to(nx, ny):
-        n = max(1, int(math.hypot(nx - x, ny - y) / step))
-        pts.extend((x + (nx - x) * k / n, y + (ny - y) * k / n) for k in range(1, n + 1))
-
-    def arc_to(r, fa, fs, nx, ny):
-        x1p, y1p = (x - nx) / 2, (y - ny) / 2
-        num_ = r ** 4 - r * r * y1p ** 2 - r * r * x1p ** 2
-        den = r * r * y1p ** 2 + r * r * x1p ** 2
-        coef = math.sqrt(max(0.0, num_ / den)) * (-1 if fa == fs else 1)
-        cxp, cyp = coef * y1p, -coef * x1p
-        cx, cy = cxp + (x + nx) / 2, cyp + (y + ny) / 2
-        t1 = math.atan2((y1p - cyp) / r, (x1p - cxp) / r)
-        dt = math.atan2((-y1p - cyp) / r, (-x1p - cxp) / r) - t1
-        if fs == 0 and dt > 0:
-            dt -= 2 * math.pi
-        elif fs == 1 and dt < 0:
-            dt += 2 * math.pi
-        n = max(1, int(abs(dt) * r / step))
-        pts.extend((cx + r * math.cos(t1 + dt * k / n), cy + r * math.sin(t1 + dt * k / n)) for k in range(1, n + 1))
-
-    while i < len(tokens):
-        if tokens[i].isalpha():
-            cmd = tokens[i]
-            i += 1
-        rel, c = cmd.islower(), cmd.upper()
-        if c == "M":
-            nx, ny = num(), num()
-            x, y = (x + nx, y + ny) if rel else (nx, ny)
-            sx, sy = x, y
-            pts.append((x, y))
-            cmd = "l" if rel else "L"
-        elif c == "L":
-            nx, ny = num(), num()
-            nx, ny = (x + nx, y + ny) if rel else (nx, ny)
-            line_to(nx, ny)
-            x, y = nx, ny
-        elif c == "H":
-            nx = num()
-            nx = x + nx if rel else nx
-            line_to(nx, y)
-            x = nx
-        elif c == "V":
-            ny = num()
-            ny = y + ny if rel else ny
-            line_to(x, ny)
-            y = ny
-        elif c == "A":
-            rx, _ry, _rot, fa, fs, nx, ny = (num() for _ in range(7))
-            nx, ny = (x + nx, y + ny) if rel else (nx, ny)
-            arc_to(rx, int(fa), int(fs), nx, ny)
-            x, y = nx, ny
-        elif c == "C":
-            v = [num() for _ in range(6)]
-            if rel:
-                v = [v[k] + (x if k % 2 == 0 else y) for k in range(6)]
-            x1, y1, x2, y2, nx, ny = v
-            n = max(1, int((math.hypot(x1 - x, y1 - y) + math.hypot(x2 - x1, y2 - y1) + math.hypot(nx - x2, ny - y2)) / step))
-            for k in range(1, n + 1):
-                t = k / n
-                a, b, c3, d3 = (1 - t) ** 3, 3 * (1 - t) ** 2 * t, 3 * (1 - t) * t * t, t ** 3
-                pts.append((a * x + b * x1 + c3 * x2 + d3 * nx, a * y + b * y1 + c3 * y2 + d3 * ny))
-            x, y = nx, ny
-        elif c == "Z":
-            line_to(sx, sy)
-            x, y = sx, sy
-    return pts
+GRAPHITE = ((0x26, 0x27, 0x2B), (0x0E, 0x0E, 0x10))
+PAPER = ((0xFF, 0xFF, 0xFF), (0xDD, 0xDF, 0xE3))
+BACK = ((0x9A, 0x9D, 0xA3), (0x6B, 0x6E, 0x75))
+HEADER = ((0xC4, 0xC7, 0xCD), (0x8E, 0x92, 0x99))
+LINE = (0x8E, 0x92, 0x99)
+SELECTED = (0x2A, 0x2B, 0x2F)
+FRONT = (160, 260, 754, 854)  # front sheet box; the back sheet is the same size, up and to the right
+BACK_BOX = (270, 170, 864, 764)
+COLS, ROWS = 4, 5
 
 
-def glyph_mask():
-    big = SIZE * SS
-    unit = GLYPH_WIDTH * big / 24
-    mask = Image.new("L", (big, big), 0)
-    draw = ImageDraw.Draw(mask)
-    r = STROKE / 2 * unit
-    off = big / 2 - 12 * unit
-    # Each path is sampled on its own, since a leading relative moveto starts from 0,0.
-    for px, py in (pt for d in PATHS for pt in path_points(d, 0.3 / unit)):
-        cx, cy = off + px * unit, off + py * unit
-        draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=255)
-    return mask.resize((SIZE, SIZE), Image.LANCZOS)
-
-
-def gradient(c0, c1, angle_deg=90, size=SIZE):
-    """Linear gradient from c0 to c1; angle 90 runs top to bottom, 45 top left to bottom right."""
-    g = Image.linear_gradient("L").rotate(90 - angle_deg, resample=Image.BICUBIC, expand=True)
-    w, h = g.size
-    g = g.crop(((w - 256) // 2, (h - 256) // 2, (w + 256) // 2, (h + 256) // 2)).resize((size, size), Image.BICUBIC)
-    return Image.composite(Image.new("RGB", (size, size), c1), Image.new("RGB", (size, size), c0), g)
-
-
-def shift(mask, dx, dy):
-    return ImageChops.offset(mask, int(round(dx)), int(round(dy)))
-
-
-def with_alpha(color, mask, opacity=1.0):
-    layer = Image.new("RGBA", mask.size, color)
-    layer.putalpha(mask.point(lambda v: round(v * opacity)))
-    return layer
-
-
-def rounded(inset, radius, width=None):
+def ss_mask(draw_fn):
     m = Image.new("L", (SIZE * SS, SIZE * SS), 0)
-    box = (inset * SS, inset * SS, (SIZE - inset) * SS - 1, (SIZE - inset) * SS - 1)
-    ImageDraw.Draw(m).rounded_rectangle(box, radius * SS, fill=None if width else 255,
-                                        outline=255 if width else None, width=(width or 0) * SS)
+    draw_fn(ImageDraw.Draw(m), SS)
     return m.resize((SIZE, SIZE), Image.LANCZOS)
 
 
+def linear(c0, c1, angle=90):
+    """Linear gradient from c0 to c1; angle 90 runs top to bottom."""
+    # A rotated square of side 364 still covers its central 256 square at any angle.
+    g = Image.linear_gradient("L").resize((364, 364), Image.BICUBIC).rotate(90 - angle, resample=Image.BICUBIC)
+    g = g.crop((54, 54, 310, 310)).resize((SIZE, SIZE), Image.BICUBIC)
+    return Image.composite(Image.new("RGB", (SIZE, SIZE), c1), Image.new("RGB", (SIZE, SIZE), c0), g)
+
+
+def layer(color, mask, opacity=1.0):
+    l = Image.new("RGBA", (SIZE, SIZE), color)
+    l.putalpha(mask.point(lambda v: round(v * opacity)))
+    return l
+
+
+def fill(img, colors, mask, angle=70):
+    g = linear(*colors, angle).convert("RGBA")
+    g.putalpha(mask)
+    img.alpha_composite(g)
+
+
+def rr(x0, y0, x1, y1, r):
+    return ss_mask(lambda d, s: d.rounded_rectangle((x0 * s, y0 * s, x1 * s, y1 * s), r * s, fill=255))
+
+
+def sheet(img, box, colors, offset, blur):
+    """A sheet with a soft shadow and a bevel: lit top edge, darker bottom edge."""
+    page = rr(*box, 56)
+    img.alpha_composite(layer((0, 0, 0), ImageChops.offset(page, *offset).filter(ImageFilter.GaussianBlur(blur)), 0.6))
+    fill(img, colors, page)
+    lit = ImageChops.subtract(page, ImageChops.offset(page, 0, 5)).filter(ImageFilter.GaussianBlur(2))
+    shade = ImageChops.subtract(page, ImageChops.offset(page, 0, -5)).filter(ImageFilter.GaussianBlur(3))
+    img.alpha_composite(layer((255, 255, 255), lit, 0.5))
+    img.alpha_composite(layer((0, 0, 0), shade, 0.25))
+
+
 def main(out):
-    # Background: graphite, lighter at the top, with a soft glow behind the glyph.
-    img = gradient((0x33, 0x34, 0x37), (0x16, 0x17, 0x19)).convert("RGBA")
-    glow = Image.new("L", (SIZE, SIZE), 0)
-    ImageDraw.Draw(glow).ellipse((150, 40, 874, 640), fill=60)
-    img.alpha_composite(with_alpha((255, 255, 255), glow.filter(ImageFilter.GaussianBlur(160)), 0.35))
+    img = linear(*GRAPHITE).convert("RGBA")
 
-    # Rim: a thin light edge, bright at the top and fading out toward the bottom.
-    radius = SIZE * 0.2237
-    rim = rounded(3, radius - 3, width=3).filter(ImageFilter.GaussianBlur(1.2))
-    fade = gradient((255, 255, 255), (40, 40, 40)).convert("L")
-    img.alpha_composite(with_alpha((255, 255, 255), ImageChops.multiply(rim, fade), 0.35))
-    inner = rounded(0, radius, width=26).filter(ImageFilter.GaussianBlur(14))
-    img.alpha_composite(with_alpha((0, 0, 0), ImageChops.multiply(inner, gradient((0,) * 3, (255,) * 3).convert("L")), 0.35))
+    sheet(img, BACK_BOX, BACK, (0, 16), 24)
+    sheet(img, FRONT, PAPER, (0, 20), 28)
 
-    mask = glyph_mask()
-    lx, ly = LIGHT
-    dx, dy = -lx * DEPTH * 0.5, -ly * DEPTH  # extrusion goes away from the light
+    # Grid on the front sheet: a sunk header row, then the cell lines.
+    x0, y0, x1, y1 = FRONT[0] + 60, FRONT[1] + 60, FRONT[2] - 60, FRONT[3] - 60
+    cw, ch = (x1 - x0) / COLS, (y1 - y0) / ROWS
+    header = rr(x0, y0, x1, y0 + ch, 14)
+    fill(img, HEADER, header)
+    img.alpha_composite(layer((0, 0, 0), ImageChops.subtract(header, ImageChops.offset(header, 0, -4)).filter(ImageFilter.GaussianBlur(2)), 0.2))
+    grid = Image.new("L", (SIZE, SIZE), 0)
+    d = ImageDraw.Draw(grid)
+    for c in range(1, COLS):
+        d.line((x0 + c * cw, y0, x0 + c * cw, y1), fill=255, width=5)
+    for r in range(1, ROWS):
+        d.line((x0, y0 + r * ch, x1, y0 + r * ch), fill=255, width=5)
+    img.alpha_composite(layer(LINE, grid.filter(ImageFilter.GaussianBlur(0.6)), 0.55))
 
-    # Drop shadow: a wide soft one and a tight contact one.
-    img.alpha_composite(with_alpha((0, 0, 0), shift(mask, dx * 2, dy * 3.2).filter(ImageFilter.GaussianBlur(34)), 0.70))
-    img.alpha_composite(with_alpha((0, 0, 0), shift(mask, dx * 1.2, dy * 1.4).filter(ImageFilter.GaussianBlur(8)), 0.55))
+    # Selected cell: second column, third row.
+    sx, sy = x0 + cw, y0 + 2 * ch
+    sel = ss_mask(lambda d, s: d.rounded_rectangle(((sx - 4) * s, (sy - 4) * s, (sx + cw + 4) * s, (sy + ch + 4) * s), 8 * s, outline=255, width=12 * s))
+    img.alpha_composite(layer(SELECTED, sel))
 
-    # Side faces: the mask stacked toward the shadow side, shaded from mid grey to darker.
-    side = Image.new("L", (SIZE, SIZE), 0)
-    for k in range(1, DEPTH + 1):
-        side = ImageChops.lighter(side, shift(mask, dx * k / DEPTH, dy * k / DEPTH))
-    side_color = gradient((0xB8, 0xBA, 0xBE), (0x7C, 0x7F, 0x85), 60).convert("RGBA")
-    side_color.putalpha(side)
-    img.alpha_composite(side_color)
-
-    # Top face: near white, slightly cooler toward the bottom right.
-    top = gradient((0xFF, 0xFF, 0xFF), (0xDD, 0xDF, 0xE3), 50).convert("RGBA")
-    top.putalpha(mask)
-    img.alpha_composite(top)
-
-    # Fold: the band bends along the diagonal through the two inner corners, so the
-    # lower right cell faces away from the light and reads as a second panel.
-    fold = Image.new("L", (SIZE * 2, SIZE * 2), 0)
-    ImageDraw.Draw(fold).rectangle((0, SIZE, SIZE * 2, SIZE * 2), fill=255)
-    fold = fold.rotate(45, resample=Image.BICUBIC).crop((SIZE // 2, SIZE // 2, SIZE * 3 // 2, SIZE * 3 // 2))
-    fold = fold.filter(ImageFilter.GaussianBlur(10))
-    shade = gradient((0xC9, 0xCC, 0xD1), (0xEC, 0xED, 0xEF), 50).convert("RGBA")
-    shade.putalpha(ImageChops.multiply(fold, mask))
-    img.alpha_composite(shade)
-    crease = ImageChops.subtract(fold, shift(fold, 6, 6)).point(lambda v: min(255, v * 3)).filter(ImageFilter.GaussianBlur(2))
-    img.alpha_composite(with_alpha((255, 255, 255), ImageChops.multiply(crease, mask), 0.8))
-
-    # Bevel: light catches the edges facing the light, the far edges darken.
-    edge_lit = ImageChops.subtract(mask, shift(mask, lx * 5, ly * 5)).filter(ImageFilter.GaussianBlur(2.5))
-    edge_dark = ImageChops.subtract(mask, shift(mask, -lx * 6, -ly * 6)).filter(ImageFilter.GaussianBlur(3))
-    img.alpha_composite(with_alpha((0x8E, 0x92, 0x99), ImageChops.multiply(edge_dark, mask), 0.45))
-    img.alpha_composite(with_alpha((255, 255, 255), ImageChops.multiply(edge_lit, mask), 0.9))
-
-    # Specular sheen across the top part of the glyph.
-    sheen = gradient((255, 255, 255), (0, 0, 0), 70).convert("L").point(lambda v: max(0, v - 150) * 2)
-    img.alpha_composite(with_alpha((255, 255, 255), ImageChops.multiply(sheen, mask), 0.25))
+    # Soft highlight at the top and a faint rim along the system mask.
+    hl = linear((255, 255, 255), (0, 0, 0)).convert("L").point(lambda v: max(0, v - 170) * 2)
+    img.alpha_composite(layer((255, 255, 255), hl, 0.10))
+    rim = ss_mask(lambda d, s: d.rounded_rectangle((2 * s, 2 * s, (SIZE - 2) * s, (SIZE - 2) * s), (RADIUS - 2) * s, outline=255, width=3 * s))
+    img.alpha_composite(layer((255, 255, 255), ImageChops.multiply(rim, linear((255,) * 3, (30,) * 3).convert("L")), 0.25))
 
     img.convert("RGB").save(out)
     print("wrote", out)
 
 
-main(sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "AppIcon.icon", "Assets", "background.png"))
+main(sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "AppIcon.icon", "Assets", "background.png"))

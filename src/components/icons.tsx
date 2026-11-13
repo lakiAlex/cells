@@ -1,6 +1,6 @@
 // The app's icons: Hugeicons stroke-rounded (MIT, https://hugeicons.com), the set
-// Lookout uses, under the names the components use. The title bar's brand glyph
-// stays Lucide, since it matches the app icon.
+// Lookout uses, under the names the components use. The title bar's brand mark
+// is drawn like the app icon.
 import {
   Alert02Icon,
   AlignBottomIcon,
@@ -80,26 +80,23 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 
-// Lucide squares-unite, drawn like the app icon: a thick raised band with a side face
-// and a fold along the diagonal. Colors come from the --brand-* variables in styles.css.
-const SQUARES_UNITE =
-  "M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3a1 1 0 0 0 1 1h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-3a1 1 0 0 0-1-1z";
-
+// The two sheets from the app icon (src-tauri/icons/make-icon.py): a grey sheet behind a white one with a header
+// row, grid lines and a selected cell. Colors come from the --brand-* variables in styles.css.
 export function BrandMark({ size = 17 }: { size?: number }) {
   return (
-    <svg className="brand-mark" width={size} height={size} viewBox="-0.5 -0.5 25 25" fill="none" aria-hidden="true">
+    <svg className="brand-mark" width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <defs>
-        <linearGradient id="brand-mark-top" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="24" y2="24">
+        <linearGradient id="brand-mark-top" gradientUnits="userSpaceOnUse" x1="0" y1="7" x2="0" y2="22">
           <stop offset="0" stopColor="var(--brand-top-1)" />
           <stop offset="1" stopColor="var(--brand-top-2)" />
         </linearGradient>
-        <clipPath id="brand-mark-fold">
-          <path d="M24.5 -0.5V24.5H-0.5z" />
-        </clipPath>
       </defs>
-      <path d={SQUARES_UNITE} stroke="var(--brand-side)" strokeWidth={3.4} transform="translate(0.35 0.7)" />
-      <path d={SQUARES_UNITE} stroke="url(#brand-mark-top)" strokeWidth={3.4} />
-      <path d={SQUARES_UNITE} stroke="var(--brand-fold)" strokeWidth={3.4} clipPath="url(#brand-mark-fold)" />
+      <rect x="7.5" y="2" width="14.5" height="14.5" rx="2.6" fill="var(--brand-back)" />
+      <rect x="2.3" y="7.8" width="14.5" height="14.5" rx="2.6" fill="var(--brand-side)" />
+      <rect x="2" y="7.5" width="14.5" height="14.5" rx="2.6" fill="url(#brand-mark-top)" />
+      <rect x="3.6" y="9.1" width="11.3" height="2.3" rx="0.6" fill="var(--brand-pad)" />
+      <path d="M6.4 11.4V20.4M9.25 11.4V20.4M12.1 11.4V20.4M3.6 13.6H14.9M3.6 15.9H14.9M3.6 18.2H14.9" stroke="var(--brand-pad)" strokeWidth="0.35" />
+      <rect x="6.4" y="15.9" width="2.85" height="2.3" rx="0.3" stroke="var(--brand-hole)" strokeWidth="0.6" />
     </svg>
   );
 }
